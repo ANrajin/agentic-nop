@@ -5,6 +5,31 @@ Role: Senior .NET Software Engineer & AI Pair Programmer
 Primary Goal: Assist developers in designing, implementing, reviewing, and maintaining production-grade nopCommerce plugins that follow nopCommerce architectural patterns, performance best practices, and upgrade-safe conventions.
 Speciality: C#, ASP.NET Core MVC, nopCommerce, JavaScript, jQuery, Razor
 
+# Basic Structure of a class
+The agent must adhere to this structure while writing a Controller, Service, ModelFactory, Validator, Builder or any type of class.
+
+- Use appropriate region block where appicable.
+
+```csharp
+public class {ClassName}
+{
+    #region Fields
+    #endregion
+
+    #region Properties
+    #endregion
+
+    #region Ctor
+    #endregion
+
+    #region Utilities
+    #endregion
+
+    #region Methods
+    #endregion
+}
+```
+
 # NopStation Admin Menu Event Consumer Rule
 
 When implementing [AdminMenuCreatedEventConsumer.cs] for NopStation plugins, adhere to the following pattern to ensure consistency with the `NopStation.Core` architecture.
@@ -86,6 +111,7 @@ public class AdminMenuCreatedEventConsumer : IConsumer<AdminMenuEvent>
                 IconClass = "far fa-dot-circle",
                 SystemName = "NopStation.{Group}.{PluginName}"
             };
+
             // 3. Add Configuration Item
             var configItem = new AdminMenuItem()
             {
@@ -96,8 +122,8 @@ public class AdminMenuCreatedEventConsumer : IConsumer<AdminMenuEvent>
                 SystemName = "NopStation.{Group}.{PluginName}.Configuration"
             };
             menuItem.ChildNodes.Add(configItem);
+
             // 4. Add Other Plugin Features (Example)
-            
             var featureItem = new AdminMenuItem()
             {
                 Title = await _localizationService.GetResourceAsync("NopStation.Plugins.{Group}.{PluginName}.Admin.Menu.Feature"),
@@ -107,7 +133,6 @@ public class AdminMenuCreatedEventConsumer : IConsumer<AdminMenuEvent>
                 SystemName = "NopStation.{Group}.{PluginName}.Feature"
             };
             menuItem.ChildNodes.Add(featureItem);
-            
 
              // 5. Add Documentation Link (Standard NopStation Pattern)
             if (menuItem.ChildNodes.Any())
@@ -132,3 +157,136 @@ public class AdminMenuCreatedEventConsumer : IConsumer<AdminMenuEvent>
     #endregion
 }
 ```
+
+# NopStation Main Plugin Class Rules
+
+- Interfaces: MUST inherit from BasePlugin and implement INopStationPlugin.
+- Installation extensions: Use `await this.InstallPluginAsync()`; inside `InstallAsync()`.
+- Use `await this.UninstallPluginAsync(new permissionsManager())`; inside `UninstallAsync()`.
+
+## Code Template
+Use the following structure as the reference implementation:
+
+```csharp
+using Nop.Core;
+using Nop.Services.Plugins;
+using NopStation.Plugin.Misc.Core.Services; // Required for INopStationPlugin extensions
+
+namespace NopStation.Plugin.{Group}.{Plugin};
+
+public class YourPlugin : BasePlugin, INopStationPlugin
+{
+    #region Fields
+
+    private readonly IWebHelper _webHelper;
+    private readonly IMessageTemplateService _messageTemplateService;
+
+    #endregion
+
+    #region Ctor
+
+    public YourPlugin(IWebHelper webHelper,
+        IMessageTemplateService messageTemplateService)
+    {
+        _webHelper = webHelper;
+        _messageTemplateService = messageTemplateService;
+        _settings = settings;
+    }
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>
+    /// Gets the configuration page URL
+    /// </summary>
+    public override string GetConfigurationPageUrl()
+    {
+        return $"{_webHelper.GetStoreLocation()}Admin/YourPlugin/Configure";
+    }
+
+    /// <summary>
+    /// Install object
+    /// </summary>
+    public override async Task InstallAsync()
+    {
+        // 1. NopStation Core Extension
+        await this.InstallPluginAsync();
+
+        await base.InstallAsync();
+    }
+
+    /// <summary>
+    /// Uninstall object
+    /// </summary>
+    public override async Task UninstallAsync()
+    {
+        await this.UninstallPluginAsync(new YourPluginPermissionConfigManager());
+
+        await base.UninstallAsync();
+    }
+
+    /// <summary>
+    /// Code-First Localization Resources (INopStationPlugin pattern)
+    /// </summary>
+    public IDictionary<string, string> GetPluginResources()
+    {
+        return new Dictionary<string, string>
+        {
+            // Admin
+            ["NopStation.Plugins.{PluginName}.Admin.Title"] = "Plugin Title",
+            
+            // Public
+            ["NopStation.Plugins.{PluginName}.Button"] = "Click Me",
+            ["NopStation.Plugins.{PluginName}.Error"] = "An error occurred.",
+            
+            // Validation
+            ["NopStation.Plugins.{PluginName}.Admin.Name.Required"] = "Name is required."
+        };
+    }
+
+    #endregion
+}
+```
+
+# Controller Rules
+
+### Code Template for AdminController
+
+```csharp
+public class {YourAdminControllerName} : NopStationAdminController
+{
+    #region Fields
+    #endregion
+
+    #region Ctor
+    #endregion
+
+    #region Utilities
+    #endregion
+
+    #region Methods
+    #endregion
+}
+```
+
+### Code Template for PublicController
+
+```csharp
+public class {YourPublicControllerName} : NopStationPublicController
+{
+    #region Fields
+    #endregion
+
+    #region Ctor
+    #endregion
+
+    #region Utilities
+    #endregion
+
+    #region Methods
+    #endregion
+}
+```
+
+# ViewComponent
